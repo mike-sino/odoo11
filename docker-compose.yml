@@ -1,0 +1,46 @@
+version: '3'
+
+volumes:
+  odoo11-web-data:
+  odoo11-db-data:
+
+services:
+  db:
+    image: postgres
+    container_name: odoo11-db
+    environment:
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_USER=odoo
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - odoo11-db-data:/var/lib/postgresql/data/pgdata
+    restart: always   
+  
+  odoo11:
+    container_name: odoo11
+    build:
+      context: ./docker
+      dockerfile: Dockerfile
+    image: odoo:11
+    links:
+      - db
+    ports:
+      - "8069:8069"
+    volumes:
+      - odoo11-web-data:/var/lib/odoo
+      - ./docker/config/odoo.conf:/etc/odoo/odoo.conf
+      - ./log/odoo-server.log:/etc/odoo/odoo-server.log
+      - ./extra-addons:/mnt/extra-addons
+    restart: always   
+  
+  pgweb:
+    image: sosedoff/pgweb
+    container_name: pgweb
+    ports:
+      - "8080:8081"
+    environment:
+      - DATABASE_URL=postgres://odoo:odoo@db:5432/postgres?sslmode=disable
+    links:
+      - db
+    restart: always
+      
